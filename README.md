@@ -112,19 +112,19 @@ node cli.mjs --json       # machine-readable
 ```bash
 curl -s http://localhost:3030/api/usage               # merged view, JSON
 curl -sX POST http://localhost:3030/api/refresh       # set the pending flag, return current merged data
-curl -sX POST http://localhost:3030/api/refresh?wait=10  # long-poll: wait up to 10s for the extension to push fresh data
+curl -sX POST http://localhost:3030/api/refresh?wait=75  # long-poll: wait up to ~75s (one full alarm cycle) for the extension push
 curl -s http://localhost:3030/api/ping                # liveness probe
 ```
 
 Server-side collectors (ZAI via Bitwarden / Codex via `~/.codex/auth.json`) run on every call.
 
-`POST /api/refresh` also pokes the extension: it sets a pending flag that the extension's background alarm picks up on its next tick (≤ 1 minute), then runs a full fetch and pushes Ollama/Claude data back. Pass `?wait=N` (seconds, max 15) to long-poll until the push lands — the agent gets fresh data in a single round trip.
+`POST /api/refresh` also pokes the extension: it sets a pending flag that the extension's background alarm picks up on its next tick (≤ 1 minute), then runs a full fetch and pushes Ollama/Claude data back. Pass `?wait=N` (seconds, max 75) to long-poll until the push lands — the agent gets fresh data in a single round trip.
 
 | condition | Claude / Ollama freshness |
 | --- | --- |
 | browser closed / extension disabled | stale (last push) |
 | browser open, `POST /api/refresh`, **no** `wait` | fresh within ~1 minute (extension alarm picks up flag) |
-| browser open, `POST /api/refresh?wait=15` | fresh in the same response if push arrives within the window |
+| browser open, `POST /api/refresh?wait=75` | fresh in the same response — covers one full alarm cycle |
 | any user interaction (popup open, dashboard open, Refresh button) | fresh immediately |
 
 <details>
@@ -336,19 +336,19 @@ node cli.mjs --json       # JSON 出力
 ```bash
 curl -s http://localhost:3030/api/usage                  # マージ済みビュー、JSON
 curl -sX POST http://localhost:3030/api/refresh          # pending フラグを立てて、現在のマージ済みデータを返す
-curl -sX POST http://localhost:3030/api/refresh?wait=10  # 長ポーリング: 拡張からの push を最大10秒待ってから返す
+curl -sX POST http://localhost:3030/api/refresh?wait=75  # 長ポーリング: 拡張 push を最大75秒（alarm 1周期分）待ってから返す
 curl -s http://localhost:3030/api/ping                   # 生存確認
 ```
 
 サーバー側の収集（ZAI は Bitwarden / Codex は `~/.codex/auth.json`）は毎コール走る。
 
-`POST /api/refresh` は拡張への **「refresh 要求」フラグ** も立てる。ブラウザが起動していれば、拡張の background alarm が最大 1 分以内にこのフラグを拾って、Claude/Ollama を fetch してサーバーに push し戻す。`?wait=N`（秒、最大 15）を付けると push 到着まで長ポーリングするので、エージェントが 1 回の呼び出しで fresh データを取れる。
+`POST /api/refresh` は拡張への **「refresh 要求」フラグ** も立てる。ブラウザが起動していれば、拡張の background alarm が最大 1 分以内にこのフラグを拾って、Claude/Ollama を fetch してサーバーに push し戻す。`?wait=N`（秒、最大 75）を付けると push 到着まで長ポーリングするので、エージェントが 1 回の呼び出しで fresh データを取れる。
 
 | 条件 | Claude / Ollama の鮮度 |
 | --- | --- |
 | ブラウザ閉じてる / 拡張無効 | 古いまま（直近 push）|
 | ブラウザ開いてる、`POST /api/refresh`（`wait` なし）| 約 1 分以内に fresh（拡張 alarm がフラグを拾う）|
-| ブラウザ開いてる、`POST /api/refresh?wait=15` | push が間に合えば同じレスポンスで fresh |
+| ブラウザ開いてる、`POST /api/refresh?wait=75` | 同じレスポンスで fresh（alarm 1周期ぶん待てるので、ほぼ確実に届く）|
 | ユーザー操作（ポップアップ開、ダッシュボード開、Refresh ボタン）| 即 fresh |
 
 <details>

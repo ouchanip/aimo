@@ -36,7 +36,10 @@ const cache = Object.create(null);
 let pendingRefresh = null;
 // long-poll resolvers waiting for the next push that arrives after `sinceMs`.
 const pushWaiters = [];
-const MAX_WAIT_SECONDS = 15;
+// MV3 alarms fire at most once per minute, so long-poll clients need room to
+// catch at least one tick. 75s gives headroom without hitting typical 120s
+// HTTP idle-timeouts in reverse proxies.
+const MAX_WAIT_SECONDS = 75;
 
 const server = createServer(async (req, res) => {
   try {
