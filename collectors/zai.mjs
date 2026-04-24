@@ -1,6 +1,8 @@
 // ZAI (Z.ai) usage collector.
-// Verified endpoint: returns TIME_LIMIT (5h) and TOKENS_LIMIT (weekly) windows.
-// unit values (observed): 3 = days, 5 = hours — mapping confirmed from nextResetTime.
+//
+// Returns whatever windows the plan exposes (TIME_LIMIT / TOKENS_LIMIT / …).
+// Labels are plan-agnostic: we infer the window span from nextResetTime so
+// a plan that returns both a 5h and a weekly TIME_LIMIT still differentiates.
 
 const QUOTA_URL = 'https://api.z.ai/api/monitor/usage/quota/limit';
 
@@ -36,11 +38,27 @@ export async function collectZai({ apiKey } = {}) {
     ok: true,
     plan: body.data.level || null,
     windows: limits.map((lim) => ({
-      label: lim.type === 'TIME_LIMIT' ? 'session (5h)' : lim.type === 'TOKENS_LIMIT' ? 'weekly (tokens)' : lim.type,
+      label: zaiLabel(lim),
       used_pct: typeof lim.percentage === 'number' ? lim.percentage : null,
       usage: lim.usage ?? null,
       remaining: lim.remaining ?? null,
       resets_at: lim.nextResetTime ? new Date(lim.nextResetTime).toISOString() : null,
     })),
   };
+}
+
+function zaiLabel(l) {
+  const base = l.type === 'TIME_LIMIT' ? 'time'
+    : l.type === 'TOKENS_LIMIT' ? 'tokens'
+    : String(l.type || 'limit').toLowerCase().replace('_limit', '');
+  const hrs = l.nextResetTime ? (l.nextResetTime - Date.now()) / 3_600_000 : null;
+  let win = null;
+  if (hrs !== null && hrs > 0) {
+    if (hrs < 6) win = '5h';
+    else if (hrs < 48) win = 'daily';
+    else if (hrs < 10 * 24) win = 'weekly';
+    else if (hrs < 45 * 24) win = 'monthly';
+    else win = 'long';
+  }
+  return win ? `${base} (${win})` : base;
 }

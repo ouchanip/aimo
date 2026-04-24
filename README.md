@@ -18,7 +18,7 @@ One extension popup + one local dashboard shows the current usage window for all
 |---|---|---|
 | Claude | 5h / 7d all / 7d Sonnet / 7d Opus / extra credits | `claude.ai/api/organizations/{uuid}/usage` via your claude.ai session cookie |
 | Codex | 5h / 7d + Spark limits | `chatgpt.com/backend-api/wham/usage` — session → `/api/auth/session` → Bearer |
-| ZAI | 5h time quota / weekly token quota | `api.z.ai/api/monitor/usage/quota/limit` — JWT auto-captured from z.ai localStorage (API key fallback) |
+| ZAI | whatever time / token windows the plan exposes (labels inferred from reset time) | `api.z.ai/api/monitor/usage/quota/limit` — JWT auto-captured from z.ai localStorage (API key fallback) |
 | Ollama | session / weekly | `ollama.com/settings` HTML parse via session cookie |
 
 ### Update policy (TOS-safe)
@@ -31,6 +31,8 @@ One extension popup + one local dashboard shows the current usage window for all
 - an agent hits `GET /api/usage` or `POST /api/refresh`.
 
 Each request retrieves exactly the same data the provider's own usage page would show you. aimo is unaffiliated with Anthropic, OpenAI, Z.ai, or Ollama; verify each provider's terms of service before using it on shared or commercial accounts.
+
+Plan differences are handled gracefully: if a provider's response doesn't include a particular window (e.g. no Opus quota on Claude Max, no Spark on Codex Plus, no weekly on legacy ZAI plans), it's simply omitted from the output.
 
 ### Features
 
@@ -138,7 +140,7 @@ MIT.
 |---|---|---|
 | Claude | 5時間 / 週間 all / 週間 Sonnet / 週間 Opus / 追加クレジット | `claude.ai/api/organizations/{uuid}/usage`（claude.ai セッション Cookie）|
 | Codex | 5時間 / 週間 + Spark 制限 | `chatgpt.com/backend-api/wham/usage` — セッション → `/api/auth/session` → Bearer |
-| ZAI | 5時間タイムクォータ / 週間トークンクォータ | `api.z.ai/api/monitor/usage/quota/limit` — z.ai localStorage から JWT 自動捕獲（API key フォールバックあり）|
+| ZAI | プランが返す時間・トークン系ウィンドウ（ラベルは reset 時刻から自動推定）| `api.z.ai/api/monitor/usage/quota/limit` — z.ai localStorage から JWT 自動捕獲（API key フォールバックあり）|
 | Ollama | セッション / 週間 | `ollama.com/settings` の HTML パース（セッション Cookie）|
 
 ### 更新ポリシー（TOS 配慮）
@@ -151,6 +153,8 @@ MIT.
 - エージェントが `GET /api/usage` / `POST /api/refresh` を叩いた時
 
 各リクエストで取得するのは、各プロバイダの自分の使用量ページに表示されるのと同じデータ。aimo は Anthropic / OpenAI / Z.ai / Ollama とは無関係。共有アカウントや商用アカウントで使う場合は各社の TOS を確認してください。
+
+プラン差分はデータ駆動で処理される：レスポンスに含まれないウィンドウ（Claude Max で Opus 枠がない、Codex Plus で Spark がない、レガシー ZAI プランで週制限がない等）は単純に表示から省かれる。
 
 ### 特徴
 

@@ -55,13 +55,32 @@ function formatZai(body, authSource) {
     plan: body.data.level || null,
     auth_source: authSource,
     windows: limits.map((l) => ({
-      label: l.type === 'TIME_LIMIT' ? 'session (5h)' : l.type === 'TOKENS_LIMIT' ? 'weekly (tokens)' : l.type,
+      label: zaiLabel(l),
       used_pct: typeof l.percentage === 'number' ? l.percentage : null,
       usage: l.usage ?? null,
       remaining: l.remaining ?? null,
       resets_at: l.nextResetTime ? new Date(l.nextResetTime).toISOString() : null,
     })),
   };
+}
+
+// Plan-agnostic label: "<metric> (<window>)". Window is inferred from
+// nextResetTime proximity so plans with both 5h and weekly of the same
+// metric type still differentiate correctly.
+function zaiLabel(l) {
+  const base = l.type === 'TIME_LIMIT' ? 'time'
+    : l.type === 'TOKENS_LIMIT' ? 'tokens'
+    : String(l.type || 'limit').toLowerCase().replace('_limit', '');
+  const hrs = l.nextResetTime ? (l.nextResetTime - Date.now()) / 3_600_000 : null;
+  let win = null;
+  if (hrs !== null && hrs > 0) {
+    if (hrs < 6) win = '5h';
+    else if (hrs < 48) win = 'daily';
+    else if (hrs < 10 * 24) win = 'weekly';
+    else if (hrs < 45 * 24) win = 'monthly';
+    else win = 'long';
+  }
+  return win ? `${base} (${win})` : base;
 }
 
 export async function fetchCodex() {
