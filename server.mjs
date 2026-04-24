@@ -2,16 +2,21 @@
 // HTTP server for the usage dashboard.
 //
 // Routes:
-//   GET  /                 -> HTML dashboard (refresh on open + manual button only)
-//   GET  /api/usage        -> JSON: server-side fresh + push cache merged
-//   POST /ingest/:provider -> accept pushed data from Chrome extension (CORS)
-//   OPTIONS /ingest/:provider -> CORS preflight
+//   GET  /                     -> HTML dashboard
+//   GET  /api/ping             -> liveness probe
+//   GET  /api/usage            -> JSON: server-side fresh + push cache merged
+//   POST /api/refresh[?wait=N] -> same payload; sets a "please push" flag so
+//                                 the extension fetches claude/ollama on its
+//                                 next alarm. Optional `wait=N` (seconds, max
+//                                 15) long-polls until the extension pushes.
+//   GET  /api/pending-refresh  -> polled by the extension's background alarm
+//   POST /ingest/:provider     -> extension uploads fresh data (CORS)
 //
 // Merge policy:
-//   - 'zai' and 'codex' are fetched server-side on every GET /api/usage.
-//   - 'ollama' and 'claude' come from push cache (no server-side path without
-//     a manually copied cookie).
-//   - If server-side returns error AND push cache has data, prefer push cache.
+//   - 'zai' and 'codex' are fetched server-side on every call.
+//   - 'ollama' and 'claude' come from the push cache — the extension is the
+//     only path to their cookies.
+//   - If server-side returns error AND push cache has data, prefer cache.
 
 import 'dotenv/config';
 import { createServer } from 'node:http';
@@ -24,6 +29,14 @@ const PUSH_ONLY = new Set(['ollama', 'claude']);
 // In-memory cache for pushed data. Keyed by provider.
 // cache[provider] = { data, received_at }
 const cache = Object.create(null);
+
+// Agent-triggered refresh signalling. Set by POST /api/refresh; cleared when
+// the extension pushes fresh data for either push-only provider.
+// `pendingRefresh.requested_at` is epoch ms.
+let pendingRefresh = null;
+// long-poll resolvers waiting for the next push that arrives after `sinceMs`.
+const pushWaiters = [];
+const MAX_WAIT_SECONDS = 15;
 
 const server = createServer(async (req, res) => {
   try {
@@ -52,13 +65,24 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    if (
-      (req.method === 'GET' && url.pathname === '/api/usage') ||
-      (req.method === 'POST' && url.pathname === '/api/refresh')
-    ) {
+    if (req.method === 'GET' && url.pathname === '/api/pending-refresh') {
+      res.writeHead(200, { 'Content-Type': 'application/json', ...cors(req) });
+      res.end(JSON.stringify({
+        pending: !!pendingRefresh,
+        requested_at: pendingRefresh?.requested_at || null,
+      }));
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/usage') {
       const merged = await buildMergedResults();
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', ...cors(req) });
       res.end(JSON.stringify(merged, null, 2));
+      return;
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/refresh') {
+      await handleRefreshPost(req, res, url);
       return;
     }
 
@@ -97,10 +121,57 @@ async function handleIngest(req, res, url) {
 
   // Normalize: accept either a full result object or a raw payload.
   const data = parsed.provider ? parsed : { provider, ...parsed };
-  cache[provider] = { data, received_at: new Date().toISOString() };
+  const receivedAtIso = new Date().toISOString();
+  const receivedAtMs = Date.parse(receivedAtIso);
+  cache[provider] = { data, received_at: receivedAtIso };
+
+  // Clear the pending flag and wake long-pollers once a push-only provider
+  // has landed fresh data after the agent's refresh request.
+  if (PUSH_ONLY.has(provider) && pendingRefresh && receivedAtMs >= pendingRefresh.requested_at) {
+    pendingRefresh = null;
+  }
+  resolveWaiters(receivedAtMs);
 
   res.writeHead(200, { ...cors(req), 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ ok: true, provider, received_at: cache[provider].received_at }));
+  res.end(JSON.stringify({ ok: true, provider, received_at: receivedAtIso }));
+}
+
+async function handleRefreshPost(req, res, url) {
+  const waitRaw = Number(url.searchParams.get('wait') || 0);
+  const waitSec = Math.min(Math.max(isFinite(waitRaw) ? waitRaw : 0, 0), MAX_WAIT_SECONDS);
+  const requestedAt = Date.now();
+  pendingRefresh = { requested_at: requestedAt };
+
+  if (waitSec > 0) {
+    await waitForPushAfter(requestedAt, waitSec * 1000);
+  }
+
+  const merged = await buildMergedResults();
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', ...cors(req) });
+  res.end(JSON.stringify(merged, null, 2));
+}
+
+function waitForPushAfter(sinceMs, timeoutMs) {
+  return new Promise((resolve) => {
+    const waiter = { sinceMs, resolve };
+    pushWaiters.push(waiter);
+    waiter.timer = setTimeout(() => {
+      const idx = pushWaiters.indexOf(waiter);
+      if (idx >= 0) pushWaiters.splice(idx, 1);
+      resolve();
+    }, timeoutMs);
+  });
+}
+
+function resolveWaiters(pushReceivedMs) {
+  for (let i = pushWaiters.length - 1; i >= 0; i--) {
+    const w = pushWaiters[i];
+    if (pushReceivedMs >= w.sinceMs) {
+      clearTimeout(w.timer);
+      w.resolve();
+      pushWaiters.splice(i, 1);
+    }
+  }
 }
 
 function cors(req) {
