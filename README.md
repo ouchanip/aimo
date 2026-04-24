@@ -8,6 +8,13 @@ Bundles a Chromium extension and a local dashboard server.
   <img src="docs/aimo_top.png" alt="aimo — AI Usage Monitor: unified usage limits for Claude, Codex, ZAI, and Ollama Cloud">
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/no%20polling-manual%20refresh%20only-22d3ee?style=flat-square" alt="No polling">
+  <img src="https://img.shields.io/badge/no%20telemetry-local%20only-22d3ee?style=flat-square" alt="No telemetry">
+  <img src="https://img.shields.io/badge/agent%20API-localhost%3A3030-22d3ee?style=flat-square" alt="Agent API">
+  <img src="https://img.shields.io/badge/license-MIT-22d3ee?style=flat-square" alt="MIT license">
+</p>
+
 [🇺🇸 English](#english) · [🇯🇵 日本語](#日本語)
 
 ---
@@ -109,6 +116,84 @@ curl -s http://localhost:3030/api/ping        # liveness probe
 ```
 
 Server-side collectors (ZAI via Bitwarden / Codex via `~/.codex/auth.json`) run on every call. Ollama/Claude come from the last push the extension sent — open the dashboard or popup to refresh them.
+
+<details>
+<summary><b>Example response</b> (trimmed)</summary>
+
+```json
+[
+  {
+    "provider": "zai",
+    "ok": true,
+    "plan": "pro",
+    "auth_source": "jwt",
+    "windows": [
+      { "label": "5h",                   "used_pct": 2, "resets_at": "2026-04-25T02:00:00Z" },
+      { "label": "tool usage (monthly)", "used_pct": 4, "usage": 47, "remaining": 953, "resets_at": "2026-05-20T13:59:46Z" }
+    ],
+    "_source": "server"
+  },
+  {
+    "provider": "claude",
+    "ok": true,
+    "plan": "default_claude_max_20x",
+    "windows": [
+      { "label": "session (5h)",  "used_pct": 15, "resets_at": "2026-04-25T13:20:00Z" },
+      { "label": "weekly (all)",  "used_pct": 7,  "resets_at": "2026-04-26T18:00:01Z" },
+      { "label": "weekly Sonnet", "used_pct": 4,  "resets_at": "2026-04-26T18:00:00Z" }
+    ],
+    "_source": "push",
+    "_received_at": "2026-04-25T00:01:23Z"
+  },
+  {
+    "provider": "codex",
+    "ok": true,
+    "plan": "prolite",
+    "windows": [
+      { "label": "session (5h)", "used_pct": 1,  "resets_at": "2026-04-25T02:00:00Z" },
+      { "label": "weekly (7d)",  "used_pct": 16, "resets_at": "2026-04-29T00:00:00Z" }
+    ],
+    "_source": "server"
+  },
+  {
+    "provider": "ollama",
+    "ok": true,
+    "plan": "pro",
+    "windows": [
+      { "label": "session", "used_pct": 0.2, "resets_in": "2 hours" },
+      { "label": "weekly",  "used_pct": 1.5, "resets_in": "2 days" }
+    ],
+    "_source": "push",
+    "_received_at": "2026-04-25T00:01:23Z"
+  }
+]
+```
+
+Each entry has `provider`, `ok`, `plan`, a `windows` array with `used_pct` and reset info, and a `_source` field (`server` = freshly fetched, `push` = cached from the extension).
+
+</details>
+
+### Route work to the provider with the most headroom
+
+A common use case for the JSON API: before dispatching an expensive prompt, pick whichever provider is furthest from hitting its tightest limit.
+
+```js
+// pick-provider.mjs
+const results = await fetch('http://localhost:3030/api/usage').then(r => r.json());
+
+const headroom = (p) => {
+  if (!p.ok || !p.windows?.length) return -1;
+  const peak = Math.max(...p.windows.map((w) => w.used_pct ?? 0));
+  return 100 - peak;
+};
+
+const ranked = results.filter((p) => p.ok).sort((a, b) => headroom(b) - headroom(a));
+const pick = ranked[0];
+
+console.log(`Dispatch to ${pick.provider} — ${headroom(pick).toFixed(1)}% headroom on its tightest window`);
+```
+
+This picks the provider whose most-used window still has the most room. Swap in your own logic — e.g. weight by model capability, treat `used_pct > 90` as a hard no, or combine with cost.
 
 ### Options page
 
@@ -245,6 +330,84 @@ curl -s http://localhost:3030/api/ping           # 生存確認
 ```
 
 サーバー側の収集（ZAI は Bitwarden / Codex は `~/.codex/auth.json`）は毎コール走る。Ollama/Claude は拡張からの直近 push を返す — ダッシュボードかポップアップを開けば更新される。
+
+<details>
+<summary><b>レスポンス例</b>（抜粋）</summary>
+
+```json
+[
+  {
+    "provider": "zai",
+    "ok": true,
+    "plan": "pro",
+    "auth_source": "jwt",
+    "windows": [
+      { "label": "5h",                   "used_pct": 2, "resets_at": "2026-04-25T02:00:00Z" },
+      { "label": "tool usage (monthly)", "used_pct": 4, "usage": 47, "remaining": 953, "resets_at": "2026-05-20T13:59:46Z" }
+    ],
+    "_source": "server"
+  },
+  {
+    "provider": "claude",
+    "ok": true,
+    "plan": "default_claude_max_20x",
+    "windows": [
+      { "label": "session (5h)",  "used_pct": 15, "resets_at": "2026-04-25T13:20:00Z" },
+      { "label": "weekly (all)",  "used_pct": 7,  "resets_at": "2026-04-26T18:00:01Z" },
+      { "label": "weekly Sonnet", "used_pct": 4,  "resets_at": "2026-04-26T18:00:00Z" }
+    ],
+    "_source": "push",
+    "_received_at": "2026-04-25T00:01:23Z"
+  },
+  {
+    "provider": "codex",
+    "ok": true,
+    "plan": "prolite",
+    "windows": [
+      { "label": "session (5h)", "used_pct": 1,  "resets_at": "2026-04-25T02:00:00Z" },
+      { "label": "weekly (7d)",  "used_pct": 16, "resets_at": "2026-04-29T00:00:00Z" }
+    ],
+    "_source": "server"
+  },
+  {
+    "provider": "ollama",
+    "ok": true,
+    "plan": "pro",
+    "windows": [
+      { "label": "session", "used_pct": 0.2, "resets_in": "2 hours" },
+      { "label": "weekly",  "used_pct": 1.5, "resets_in": "2 days" }
+    ],
+    "_source": "push",
+    "_received_at": "2026-04-25T00:01:23Z"
+  }
+]
+```
+
+各エントリは `provider` / `ok` / `plan` / `windows`（`used_pct` とリセット情報）/ `_source` を持つ。`_source: "server"` はサーバー側で都度取得、`"push"` は拡張から送られたキャッシュ。
+
+</details>
+
+### エージェント連携例：余裕のあるプロバイダに仕事を振る
+
+JSON API の典型的な使い所：重めのプロンプトを投げる前に、一番タイトな制限からまだ離れてるプロバイダを選ぶ。
+
+```js
+// pick-provider.mjs
+const results = await fetch('http://localhost:3030/api/usage').then(r => r.json());
+
+const headroom = (p) => {
+  if (!p.ok || !p.windows?.length) return -1;
+  const peak = Math.max(...p.windows.map((w) => w.used_pct ?? 0));
+  return 100 - peak;
+};
+
+const ranked = results.filter((p) => p.ok).sort((a, b) => headroom(b) - headroom(a));
+const pick = ranked[0];
+
+console.log(`${pick.provider} に振る — 最もタイトな窓でも ${headroom(pick).toFixed(1)}% 余裕あり`);
+```
+
+各プロバイダで「最も使用率の高い窓」の残量を見て、その残量が最大のプロバイダを選ぶ。独自のロジックに差し替え可能 — モデル性能で重み付け、`used_pct > 90` を hard-no にする、コストと組み合わせる、など。
 
 ### Options ページ
 
