@@ -33,32 +33,44 @@ export async function collectZai({ apiKey } = {}) {
   }
 
   const limits = body.data.limits || [];
+  const rows = limits.map((lim) => ({
+    base: zaiBase(lim),
+    win: zaiWindow(lim),
+    used_pct: typeof lim.percentage === 'number' ? lim.percentage : null,
+    usage: lim.usage ?? null,
+    remaining: lim.remaining ?? null,
+    resets_at: lim.nextResetTime ? new Date(lim.nextResetTime).toISOString() : null,
+  }));
+  const winCounts = {};
+  for (const r of rows) if (r.win) winCounts[r.win] = (winCounts[r.win] || 0) + 1;
   return {
     provider: 'zai',
     ok: true,
     plan: body.data.level || null,
-    windows: limits.map((lim) => ({
-      label: zaiLabel(lim),
-      used_pct: typeof lim.percentage === 'number' ? lim.percentage : null,
-      usage: lim.usage ?? null,
-      remaining: lim.remaining ?? null,
-      resets_at: lim.nextResetTime ? new Date(lim.nextResetTime).toISOString() : null,
+    windows: rows.map((r) => ({
+      label: r.win
+        ? (winCounts[r.win] > 1 ? `${r.win} (${r.base})` : r.win)
+        : r.base,
+      used_pct: r.used_pct,
+      usage: r.usage,
+      remaining: r.remaining,
+      resets_at: r.resets_at,
     })),
   };
 }
 
-function zaiLabel(l) {
-  const base = l.type === 'TIME_LIMIT' ? 'time'
+function zaiBase(l) {
+  return l.type === 'TIME_LIMIT' ? 'time'
     : l.type === 'TOKENS_LIMIT' ? 'tokens'
     : String(l.type || 'limit').toLowerCase().replace('_limit', '');
+}
+
+function zaiWindow(l) {
   const hrs = l.nextResetTime ? (l.nextResetTime - Date.now()) / 3_600_000 : null;
-  let win = null;
-  if (hrs !== null && hrs > 0) {
-    if (hrs < 6) win = '5h';
-    else if (hrs < 48) win = 'daily';
-    else if (hrs < 10 * 24) win = 'weekly';
-    else if (hrs < 45 * 24) win = 'monthly';
-    else win = 'long';
-  }
-  return win ? `${base} (${win})` : base;
+  if (hrs === null || hrs <= 0) return null;
+  if (hrs < 6) return '5h';
+  if (hrs < 48) return 'daily';
+  if (hrs < 10 * 24) return 'weekly';
+  if (hrs < 45 * 24) return 'monthly';
+  return 'long';
 }

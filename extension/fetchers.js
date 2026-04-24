@@ -49,38 +49,50 @@ export async function fetchZai({ apiKey, jwt } = {}) {
 
 function formatZai(body, authSource) {
   const limits = body.data.limits || [];
+  const rows = limits.map((l) => ({
+    base: zaiBase(l),
+    win: zaiWindow(l),
+    used_pct: typeof l.percentage === 'number' ? l.percentage : null,
+    usage: l.usage ?? null,
+    remaining: l.remaining ?? null,
+    resets_at: l.nextResetTime ? new Date(l.nextResetTime).toISOString() : null,
+  }));
+  // If two rows land in the same inferred window, append the base in parens
+  // to disambiguate (e.g. `5h (time)` vs `5h (tokens)`). Otherwise show the
+  // window alone — simpler and matches the way users talk about the quotas.
+  const winCounts = {};
+  for (const r of rows) if (r.win) winCounts[r.win] = (winCounts[r.win] || 0) + 1;
   return {
     provider: 'zai',
     ok: true,
     plan: body.data.level || null,
     auth_source: authSource,
-    windows: limits.map((l) => ({
-      label: zaiLabel(l),
-      used_pct: typeof l.percentage === 'number' ? l.percentage : null,
-      usage: l.usage ?? null,
-      remaining: l.remaining ?? null,
-      resets_at: l.nextResetTime ? new Date(l.nextResetTime).toISOString() : null,
+    windows: rows.map((r) => ({
+      label: r.win
+        ? (winCounts[r.win] > 1 ? `${r.win} (${r.base})` : r.win)
+        : r.base,
+      used_pct: r.used_pct,
+      usage: r.usage,
+      remaining: r.remaining,
+      resets_at: r.resets_at,
     })),
   };
 }
 
-// Plan-agnostic label: "<metric> (<window>)". Window is inferred from
-// nextResetTime proximity so plans with both 5h and weekly of the same
-// metric type still differentiate correctly.
-function zaiLabel(l) {
-  const base = l.type === 'TIME_LIMIT' ? 'time'
+function zaiBase(l) {
+  return l.type === 'TIME_LIMIT' ? 'time'
     : l.type === 'TOKENS_LIMIT' ? 'tokens'
     : String(l.type || 'limit').toLowerCase().replace('_limit', '');
+}
+
+function zaiWindow(l) {
   const hrs = l.nextResetTime ? (l.nextResetTime - Date.now()) / 3_600_000 : null;
-  let win = null;
-  if (hrs !== null && hrs > 0) {
-    if (hrs < 6) win = '5h';
-    else if (hrs < 48) win = 'daily';
-    else if (hrs < 10 * 24) win = 'weekly';
-    else if (hrs < 45 * 24) win = 'monthly';
-    else win = 'long';
-  }
-  return win ? `${base} (${win})` : base;
+  if (hrs === null || hrs <= 0) return null;
+  if (hrs < 6) return '5h';
+  if (hrs < 48) return 'daily';
+  if (hrs < 10 * 24) return 'weekly';
+  if (hrs < 45 * 24) return 'monthly';
+  return 'long';
 }
 
 export async function fetchCodex() {
