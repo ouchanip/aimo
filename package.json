@@ -1,9 +1,14 @@
 {
-  "name": "usage-monitor",
+  "name": "aimo",
   "version": "0.1.0",
-  "description": "Unified usage/limit dashboard for ZAI / Claude / Codex / Ollama Cloud",
+  "description": "Unified usage/limit viewer for ZAI / Claude / Codex / Ollama Cloud. Chromium extension + local dashboard.",
   "type": "module",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ouchanip/aimo"
+  },
   "scripts": {
     "start": "node cli.mjs",
     "serve": "node server.mjs"
