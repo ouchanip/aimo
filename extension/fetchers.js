@@ -49,40 +49,38 @@ export async function fetchZai({ apiKey, jwt } = {}) {
 
 function formatZai(body, authSource) {
   const limits = body.data.limits || [];
-  const rows = limits.map((l) => ({
-    base: zaiBase(l),
-    win: zaiWindow(l),
-    used_pct: typeof l.percentage === 'number' ? l.percentage : null,
-    usage: l.usage ?? null,
-    remaining: l.remaining ?? null,
-    resets_at: l.nextResetTime ? new Date(l.nextResetTime).toISOString() : null,
-  }));
-  // If two rows land in the same inferred window, append the base in parens
-  // to disambiguate (e.g. `5h (time)` vs `5h (tokens)`). Otherwise show the
-  // window alone — simpler and matches the way users talk about the quotas.
-  const winCounts = {};
-  for (const r of rows) if (r.win) winCounts[r.win] = (winCounts[r.win] || 0) + 1;
+  const rows = limits.map((l) => {
+    const win = zaiWindow(l);
+    return {
+      type: l.type,
+      win,
+      label: zaiLabel(l, win),
+      used_pct: typeof l.percentage === 'number' ? l.percentage : null,
+      usage: l.usage ?? null,
+      remaining: l.remaining ?? null,
+      resets_at: l.nextResetTime ? new Date(l.nextResetTime).toISOString() : null,
+    };
+  });
+  // Sort by next reset ascending so short, actionable windows (5h) appear
+  // before monthly/long-running ones — more intuitive at a glance.
+  rows.sort(byResetsAt);
   return {
     provider: 'zai',
     ok: true,
     plan: body.data.level || null,
     auth_source: authSource,
-    windows: rows.map((r) => ({
-      label: r.win
-        ? (winCounts[r.win] > 1 ? `${r.win} (${r.base})` : r.win)
-        : r.base,
-      used_pct: r.used_pct,
-      usage: r.usage,
-      remaining: r.remaining,
-      resets_at: r.resets_at,
-    })),
+    windows: rows.map(({ type, win, ...rest }) => rest),
   };
 }
 
-function zaiBase(l) {
-  return l.type === 'TIME_LIMIT' ? 'time'
-    : l.type === 'TOKENS_LIMIT' ? 'tokens'
-    : String(l.type || 'limit').toLowerCase().replace('_limit', '');
+// ZAI's API names don't map to the UI terminology:
+//   TOKENS_LIMIT → the "Hours Quota" (main LLM quota, 5h on legacy plans)
+//   TIME_LIMIT   → "Tool usage" (Web Search / Reader / Zread call counter)
+// We surface that mapping in labels so the dashboard matches ZAI's page.
+function zaiLabel(l, win) {
+  if (l.type === 'TIME_LIMIT') return win ? `tool usage (${win})` : 'tool usage';
+  if (l.type === 'TOKENS_LIMIT') return win || 'tokens';
+  return String(l.type || 'limit').toLowerCase().replace('_limit', '');
 }
 
 function zaiWindow(l) {
@@ -93,6 +91,13 @@ function zaiWindow(l) {
   if (hrs < 10 * 24) return 'weekly';
   if (hrs < 45 * 24) return 'monthly';
   return 'long';
+}
+
+function byResetsAt(a, b) {
+  if (!a.resets_at && !b.resets_at) return 0;
+  if (!a.resets_at) return 1;
+  if (!b.resets_at) return -1;
+  return new Date(a.resets_at) - new Date(b.resets_at);
 }
 
 export async function fetchCodex() {

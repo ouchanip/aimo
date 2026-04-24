@@ -33,36 +33,32 @@ export async function collectZai({ apiKey } = {}) {
   }
 
   const limits = body.data.limits || [];
-  const rows = limits.map((lim) => ({
-    base: zaiBase(lim),
-    win: zaiWindow(lim),
-    used_pct: typeof lim.percentage === 'number' ? lim.percentage : null,
-    usage: lim.usage ?? null,
-    remaining: lim.remaining ?? null,
-    resets_at: lim.nextResetTime ? new Date(lim.nextResetTime).toISOString() : null,
-  }));
-  const winCounts = {};
-  for (const r of rows) if (r.win) winCounts[r.win] = (winCounts[r.win] || 0) + 1;
+  const rows = limits.map((lim) => {
+    const win = zaiWindow(lim);
+    return {
+      label: zaiLabel(lim, win),
+      used_pct: typeof lim.percentage === 'number' ? lim.percentage : null,
+      usage: lim.usage ?? null,
+      remaining: lim.remaining ?? null,
+      resets_at: lim.nextResetTime ? new Date(lim.nextResetTime).toISOString() : null,
+    };
+  });
+  rows.sort(byResetsAt);
   return {
     provider: 'zai',
     ok: true,
     plan: body.data.level || null,
-    windows: rows.map((r) => ({
-      label: r.win
-        ? (winCounts[r.win] > 1 ? `${r.win} (${r.base})` : r.win)
-        : r.base,
-      used_pct: r.used_pct,
-      usage: r.usage,
-      remaining: r.remaining,
-      resets_at: r.resets_at,
-    })),
+    windows: rows,
   };
 }
 
-function zaiBase(l) {
-  return l.type === 'TIME_LIMIT' ? 'time'
-    : l.type === 'TOKENS_LIMIT' ? 'tokens'
-    : String(l.type || 'limit').toLowerCase().replace('_limit', '');
+// ZAI API type → UI terminology:
+//   TOKENS_LIMIT → "Hours Quota" (main LLM quota; window varies by plan)
+//   TIME_LIMIT   → "Tool usage" (Web Search / Reader / Zread)
+function zaiLabel(l, win) {
+  if (l.type === 'TIME_LIMIT') return win ? `tool usage (${win})` : 'tool usage';
+  if (l.type === 'TOKENS_LIMIT') return win || 'tokens';
+  return String(l.type || 'limit').toLowerCase().replace('_limit', '');
 }
 
 function zaiWindow(l) {
@@ -73,4 +69,11 @@ function zaiWindow(l) {
   if (hrs < 10 * 24) return 'weekly';
   if (hrs < 45 * 24) return 'monthly';
   return 'long';
+}
+
+function byResetsAt(a, b) {
+  if (!a.resets_at && !b.resets_at) return 0;
+  if (!a.resets_at) return 1;
+  if (!b.resets_at) return -1;
+  return new Date(a.resets_at) - new Date(b.resets_at);
 }
