@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "AI Usage Monitor",
+  "version": "0.1.0",
+  "description": "Unified usage/limit viewer for ZAI, Claude, Codex, and Ollama Cloud.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://ollama.com/*",
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://api.z.ai/*",
+    "http://localhost:3030/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AI Usage Monitor"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3030/*"],
+      "js": ["content-bridge.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://z.ai/*", "https://chat.z.ai/*"],
+      "js": ["content-zai.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

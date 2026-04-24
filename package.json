@@ -1,0 +1,14 @@
+{
+  "name": "usage-monitor",
+  "version": "0.1.0",
+  "description": "Unified usage/limit dashboard for ZAI / Claude / Codex / Ollama Cloud",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node cli.mjs",
+    "serve": "node server.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

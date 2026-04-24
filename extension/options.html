@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>AI Usage Monitor — Options</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1115; color: #e6e6e6; padding: 28px; max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; color: #7dd3fc; margin: 28px 0 10px; }
+  p.lede { color: #888; font-size: 13px; margin: 0 0 24px; }
+  .section { background: #181b22; border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-size: 11px; font-weight: 600; margin: 10px 0 6px; letter-spacing: 0.5px; text-transform: uppercase; color: #bbb; }
+  input[type="password"], input[type="text"] {
+    width: 100%; padding: 8px 10px; background: #0f1115; color: #e6e6e6;
+    border: 1px solid #2a2f3a; border-radius: 6px; font: inherit; font-size: 13px;
+  }
+  small { color: #666; font-size: 11px; display: block; margin-top: 4px; }
+  button { padding: 6px 14px; background: #2a2f3a; color: #e6e6e6;
+    border: 1px solid #3a4050; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+  button:hover { background: #343a47; }
+  button.primary { background: #155e75; border-color: #0e7490; }
+  button.primary:hover { background: #0e7490; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-on { background: #4ade80; }
+  .status-off { background: #ef4444; }
+  .status-unknown { background: #666; }
+  .status { font-size: 12px; color: #bbb; }
+  .cmd { background: #0f1115; border: 1px solid #2a2f3a; padding: 8px 12px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #a3e635; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 6px 0; }
+  .cmd code { flex: 1; overflow-x: auto; white-space: nowrap; }
+  .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+  .linkcard { display: block; background: #0f1115; border: 1px solid #2a2f3a; border-radius: 6px; padding: 10px 12px; text-decoration: none; color: #e6e6e6; font-size: 12px; }
+  .linkcard:hover { border-color: #7dd3fc; background: #1a1f26; }
+  .linkcard .who { color: #7dd3fc; font-weight: 600; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .linkcard .what { color: #aaa; margin-top: 2px; }
+  .prov-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #0f1115; border: 1px solid #2a2f3a; border-radius: 6px; cursor: pointer; user-select: none; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #bbb; }
+  .prov-toggle input { accent-color: #7dd3fc; cursor: pointer; }
+  .prov-toggle input:checked + span { color: #7dd3fc; font-weight: 600; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #155e75; padding: 8px 14px; border-radius: 6px; font-size: 12px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<h1>AI Usage Monitor — Options</h1>
+<p class="lede">Zero-config preferred: each provider auto-authenticates via your existing browser login. ZAI falls back to an API key if you prefer.</p>
+
+<h2>Providers</h2>
+<div class="section">
+  <small>Uncheck to hide and stop fetching. Useful if you don't use a provider.</small>
+  <div id="providers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px">
+    <label class="prov-toggle"><input type="checkbox" data-prov="zai" checked> <span>ZAI</span></label>
+    <label class="prov-toggle"><input type="checkbox" data-prov="claude" checked> <span>Claude</span></label>
+    <label class="prov-toggle"><input type="checkbox" data-prov="codex" checked> <span>Codex</span></label>
+    <label class="prov-toggle"><input type="checkbox" data-prov="ollama" checked> <span>Ollama</span></label>
+  </div>
+</div>
+
+<h2>Server</h2>
+<div class="section">
+  <div class="row" style="margin-bottom: 10px;">
+    <span class="status"><span class="status-dot status-unknown" id="server-dot"></span><span id="server-text">checking…</span></span>
+    <button id="server-recheck">Recheck</button>
+    <a href="http://localhost:3030" target="_blank" style="color:#7dd3fc;font-size:12px;margin-left:auto">Open dashboard →</a>
+  </div>
+  <small>The local server aggregates push data from this extension with server-side collectors (Bitwarden-backed ZAI key, Codex auth.json). It's optional — the extension popup works standalone.</small>
+  <label>Start the server</label>
+  <div class="cmd"><code>cd usage-monitor && node server.mjs</code><button data-copy="cd usage-monitor && node server.mjs">Copy</button></div>
+  <small>Run from the <code>nana/usage-monitor</code> directory. Keep it running in a terminal tab.</small>
+</div>
+
+<h2>For agents / scripts</h2>
+<div class="section">
+  <small>When the server is running, agents can read the merged view over HTTP. JSON only, no auth.</small>
+  <label>Get all providers</label>
+  <div class="cmd"><code>curl -s http://localhost:3030/api/usage</code><button data-copy="curl -s http://localhost:3030/api/usage">Copy</button></div>
+  <label>Force refresh (same payload, semantic alias)</label>
+  <div class="cmd"><code>curl -sX POST http://localhost:3030/api/refresh</code><button data-copy="curl -sX POST http://localhost:3030/api/refresh">Copy</button></div>
+  <small>Server re-runs ZAI + Codex collectors on every call. Ollama/Claude use the last push from this extension — open any dashboard page (or trigger via <code>POST /ingest/:provider</code>) to update them.</small>
+</div>
+
+<h2>Auto-auth status</h2>
+<div class="section">
+  <div class="row" style="margin-bottom: 10px;">
+    <span class="status"><span class="status-dot" id="zai-dot"></span>ZAI: <span id="zai-text">checking…</span></span>
+    <button id="zai-capture">Open z.ai (capture JWT)</button>
+  </div>
+  <small>ZAI uses a JWT auto-captured from <code>z.ai</code> localStorage the first time you visit the site after installing the extension.</small>
+
+  <label>ZAI API key (fallback)</label>
+  <div class="row">
+    <input type="password" id="zaikey" placeholder="paste your z.ai API key (only needed if JWT capture fails)">
+    <button id="save-key" class="primary">Save</button>
+  </div>
+  <small>Stored via chrome.storage.local. Tried only when the auto-captured JWT doesn't work.</small>
+</div>
+
+<h2>Quick links — provider usage pages</h2>
+<div class="section">
+  <div class="links">
+    <a class="linkcard" href="https://claude.ai/settings/usage" target="_blank">
+      <div class="who">Claude</div>
+      <div class="what">claude.ai/settings/usage</div>
+    </a>
+    <a class="linkcard" href="https://chatgpt.com/codex/settings/usage" target="_blank">
+      <div class="who">Codex</div>
+      <div class="what">chatgpt.com/codex/settings/usage</div>
+    </a>
+    <a class="linkcard" href="https://z.ai/manage-apikey/subscription" target="_blank">
+      <div class="who">ZAI</div>
+      <div class="what">z.ai/manage-apikey/subscription</div>
+    </a>
+    <a class="linkcard" href="https://ollama.com/settings" target="_blank">
+      <div class="who">Ollama</div>
+      <div class="what">ollama.com/settings</div>
+    </a>
+  </div>
+  <small style="margin-top: 10px;">Opening these pages in the same browser refreshes the session cookies the extension relies on. Visiting z.ai also triggers JWT capture.</small>
+</div>
+
+<div class="toast" id="toast">Copied</div>
+<script src="options.js"></script>
+</body>
+</html>
