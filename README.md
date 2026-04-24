@@ -4,11 +4,11 @@ A unified viewer for your **ZAI / Claude / Codex / Ollama Cloud** usage limits.
 Bundles a Chromium extension and a local dashboard server.
 **Zero-config for most providers** — reuses the browser session you're already logged into.
 
-[🇺🇸 English](#english) · [🇯🇵 日本語](#日本語)
-
 <p align="center">
-  <img src="docs/aimo-extension-popup.png" alt="aimo extension popup showing Claude / Codex / ZAI / Ollama usage bars" width="420">
+  <img src="docs/aimo_top.png" alt="aimo — AI Usage Monitor: unified usage limits for Claude, Codex, ZAI, and Ollama Cloud">
 </p>
+
+[🇺🇸 English](#english) · [🇯🇵 日本語](#日本語)
 
 ---
 
