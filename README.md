@@ -6,6 +6,10 @@ Bundles a Chromium extension and a local dashboard server.
 
 [🇺🇸 English](#english) · [🇯🇵 日本語](#日本語)
 
+<p align="center">
+  <img src="docs/aimo-extension-popup.png" alt="aimo extension popup showing Claude / Codex / ZAI / Ollama usage bars" width="420">
+</p>
+
 ---
 
 ## English
