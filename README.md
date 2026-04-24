@@ -14,6 +14,20 @@ Bundles a Chromium extension and a local dashboard server.
 
 ## English
 
+### Why aimo?
+
+AI tools are powerful, but their usage limits are fragmented.
+
+Claude, Codex, ZAI, and Ollama Cloud each expose their limits in different places, with different reset windows, quota names, and usage formats. When you use multiple providers for coding, research, agents, or automation, checking "which model can I safely use now?" becomes a manual routine.
+
+aimo solves that small but painful operational problem.
+
+It gives you one local view of your current AI usage windows — no background polling, no cloud sync, no telemetry. Open the popup, refresh the dashboard, or let your local agent check the JSON API before dispatching a heavy refactor to the provider with the most headroom.
+
+aimo is not a benchmark tool, a proxy, or an automation bot.
+
+It is a fuel gauge for people who actively operate multiple AI systems.
+
 ### What it does
 
 One extension popup + one local dashboard shows the current usage window for all four services:
@@ -135,6 +149,20 @@ MIT.
 ---
 
 ## 日本語
+
+### なぜ aimo？
+
+AI ツールは強力だが、使用制限は分断されている。
+
+Claude / Codex / ZAI / Ollama Cloud はそれぞれ別の場所で、別のリセット窓、別のクォータ名、別のフォーマットで制限を表示する。コーディング・リサーチ・エージェント・自動化で複数プロバイダを使っていると、「今どのモデルなら安全に使えるか？」の確認が手動のルーチン作業になる。
+
+aimo はこの小さいが地味に痛い運用上の問題を解く。
+
+ローカルに 1 つのビューで現在の AI 使用量ウィンドウを表示する — バックグラウンド poll なし、クラウド同期なし、テレメトリなし。ポップアップを開く、ダッシュボードを Refresh する、あるいはローカルのエージェントが JSON API を叩いて「一番余裕のあるプロバイダ」にヘビーなリファクタを投げる前のチェックに使える。
+
+aimo はベンチマークツールでも、プロキシでも、自動化 bot でもない。
+
+複数 AI システムを能動的に運用する人のための **燃料計（fuel gauge）** だ。
 
 ### 何をするツールか
 
