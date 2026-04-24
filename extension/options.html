@@ -2,11 +2,14 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>AI Usage Monitor — Options</title>
+<title>aimo — Options</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1115; color: #e6e6e6; padding: 28px; max-width: 720px; margin: 0 auto; }
+  .brand-wrap { display: flex; flex-direction: column; line-height: 1; margin-bottom: 8px; }
+  .brand { font-family: -apple-system, Segoe UI, system-ui, sans-serif; font-weight: 800; font-size: 40px; letter-spacing: -1.5px; margin: 0; line-height: 1; background: linear-gradient(135deg, #7dd3fc 0%, #22d3ee 50%, #06b6d4 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .brand-sub { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #6b7280; margin-top: 6px; }
   h1 { font-size: 20px; margin: 0 0 6px; }
   h2 { font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; color: #7dd3fc; margin: 28px 0 10px; }
   p.lede { color: #888; font-size: 13px; margin: 0 0 24px; }
@@ -43,7 +46,10 @@
 </style>
 </head>
 <body>
-<h1>AI Usage Monitor — Options</h1>
+<div class="brand-wrap">
+  <span class="brand">aimo</span>
+  <span class="brand-sub">AI Usage Monitor — Options</span>
+</div>
 <p class="lede">Zero-config preferred: each provider auto-authenticates via your existing browser login. ZAI falls back to an API key if you prefer.</p>
 
 <h2>Providers</h2>

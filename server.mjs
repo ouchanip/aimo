@@ -150,14 +150,16 @@ function renderHtml(results) {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Usage Monitor</title>
+<title>aimo — AI Usage Monitor</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1115; color: #e6e6e6; margin: 0; padding: 24px; }
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
-  h1 { margin: 0; font-size: 20px; }
-  .subtitle { color: #888; font-size: 12px; }
+  .brand-wrap { display: flex; flex-direction: column; line-height: 1; }
+  .brand { font-family: -apple-system, Segoe UI, system-ui, sans-serif; font-weight: 800; font-size: 40px; letter-spacing: -1.5px; margin: 0; line-height: 1; background: linear-gradient(135deg, #7dd3fc 0%, #22d3ee 50%, #06b6d4 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .brand-sub { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #6b7280; margin-top: 6px; }
+  .subtitle { color: #888; font-size: 12px; margin-top: 2px; }
   button { background: #2a2f3a; color: #e6e6e6; border: 1px solid #3a4050; padding: 6px 14px; border-radius: 6px; cursor: pointer; font: inherit; }
   button:hover { background: #343a47; }
   button:active { background: #242935; }
@@ -182,7 +184,10 @@ function renderHtml(results) {
 <body>
 <header>
   <div>
-    <h1>Usage Monitor</h1>
+    <div class="brand-wrap">
+      <span class="brand">aimo</span>
+      <span class="brand-sub">AI Usage Monitor</span>
+    </div>
     <div class="subtitle" id="updated">rendered ${now} UTC · <a href="/api/usage">json</a></div>
   </div>
   <div>
