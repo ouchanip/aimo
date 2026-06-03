@@ -34,8 +34,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 async function handleFetchAll({ pushToLocal }) {
-  const { zaiApiKey, zaiJwt, enabled } = await chrome.storage.local.get(['zaiApiKey', 'zaiJwt', 'enabled']);
-  const results = await fetchAll({ zaiApiKey, zaiJwt, enabled: enabled || {} });
+  const { zaiApiKey, zaiJwt, opencodeWorkspace, enabled } = await chrome.storage.local.get(['zaiApiKey', 'zaiJwt', 'opencodeWorkspace', 'enabled']);
+  const results = await fetchAll({ zaiApiKey, zaiJwt, opencodeWorkspace, enabled: enabled || {} });
   if (pushToLocal) {
     await Promise.allSettled(results.map(pushToIngest));
   }

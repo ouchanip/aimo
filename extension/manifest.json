@@ -2,13 +2,14 @@
   "manifest_version": 3,
   "name": "aimo — AI Usage Monitor",
   "version": "0.2.0",
-  "description": "Unified usage/limit viewer for ZAI, Claude, Codex, and Ollama Cloud.",
+  "description": "Unified usage/limit viewer for ZAI, Claude, Codex, Ollama Cloud, and OpenCode Go.",
   "permissions": ["storage", "alarms"],
   "host_permissions": [
     "https://ollama.com/*",
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://api.z.ai/*",
+    "https://opencode.ai/*",
     "http://localhost:3030/*"
   ],
   "background": {

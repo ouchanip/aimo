@@ -60,6 +60,7 @@
     <label class="prov-toggle"><input type="checkbox" data-prov="claude" checked> <span>Claude</span></label>
     <label class="prov-toggle"><input type="checkbox" data-prov="codex" checked> <span>Codex</span></label>
     <label class="prov-toggle"><input type="checkbox" data-prov="ollama" checked> <span>Ollama</span></label>
+    <label class="prov-toggle"><input type="checkbox" data-prov="opencode" checked> <span>OpenCode</span></label>
   </div>
 </div>
 
@@ -100,6 +101,13 @@
     <button id="save-key" class="primary">Save</button>
   </div>
   <small>Stored via chrome.storage.local. Tried only when the auto-captured JWT doesn't work.</small>
+
+  <label>OpenCode workspace ID</label>
+  <div class="row">
+    <input type="text" id="opencode-ws" placeholder="wrk_… (from your opencode.ai/workspace/<id>/go URL)">
+    <button id="save-opencode-ws" class="primary">Save</button>
+  </div>
+  <small>Per-user workspace id, read from your browser's opencode.ai session. Stored locally via chrome.storage.local — never bundled in the extension.</small>
 </div>
 
 <h2>Quick links — provider usage pages</h2>

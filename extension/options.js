@@ -1,5 +1,7 @@
 const zaiKeyInput = document.getElementById('zaikey');
 const saveKeyBtn = document.getElementById('save-key');
+const opencodeWsInput = document.getElementById('opencode-ws');
+const saveOpencodeWsBtn = document.getElementById('save-opencode-ws');
 const serverDot = document.getElementById('server-dot');
 const serverText = document.getElementById('server-text');
 const serverRecheckBtn = document.getElementById('server-recheck');
@@ -15,12 +17,14 @@ init();
 async function init() {
   await Promise.all([
     loadApiKey(),
+    loadOpencodeWorkspace(),
     loadEnabled(),
     checkServer(),
     checkZaiJwt(),
   ]);
 
   saveKeyBtn.addEventListener('click', saveApiKey);
+  saveOpencodeWsBtn.addEventListener('click', saveOpencodeWorkspace);
   serverRecheckBtn.addEventListener('click', checkServer);
   zaiCaptureBtn.addEventListener('click', () => {
     chrome.tabs.create({ url: 'https://z.ai/' });
@@ -69,6 +73,17 @@ async function loadApiKey() {
 async function saveApiKey() {
   const value = zaiKeyInput.value.trim();
   await chrome.storage.local.set({ zaiApiKey: value });
+  showToast(value ? 'Saved' : 'Cleared');
+}
+
+async function loadOpencodeWorkspace() {
+  const { opencodeWorkspace } = await chrome.storage.local.get('opencodeWorkspace');
+  if (opencodeWorkspace) opencodeWsInput.value = opencodeWorkspace;
+}
+
+async function saveOpencodeWorkspace() {
+  const value = opencodeWsInput.value.trim();
+  await chrome.storage.local.set({ opencodeWorkspace: value });
   showToast(value ? 'Saved' : 'Cleared');
 }
 

@@ -24,7 +24,7 @@ import { collectAll } from './collectors/index.mjs';
 import { resolveConfig } from './lib/env-resolver.mjs';
 
 const PORT = Number(process.env.USAGE_MONITOR_PORT || 3030);
-const PUSH_ONLY = new Set(['ollama', 'claude']);
+const PUSH_ONLY = new Set(['ollama', 'claude', 'opencode']);
 
 // In-memory cache for pushed data. Keyed by provider.
 // cache[provider] = { data, received_at }
@@ -337,7 +337,7 @@ const CLIENT_SCRIPT = `
   const updatedEl = document.getElementById('updated');
 
   function triggerExtensionRefresh() {
-    window.postMessage({ type: 'usage-monitor:refresh', providers: ['ollama', 'claude', 'codex', 'zai'] }, window.location.origin);
+    window.postMessage({ type: 'usage-monitor:refresh', providers: ['ollama', 'claude', 'codex', 'zai', 'opencode'] }, window.location.origin);
   }
 
   async function fetchAndRender() {

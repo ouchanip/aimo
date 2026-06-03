@@ -1,12 +1,13 @@
 // Cross-origin fetchers. Run only inside the background service worker or
 // the extension popup — host_permissions bypass CORS there.
 
-export async function fetchAll({ zaiApiKey, zaiJwt, enabled = {} } = {}) {
+export async function fetchAll({ zaiApiKey, zaiJwt, opencodeWorkspace, enabled = {} } = {}) {
   const jobs = [];
   if (enabled.zai !== false) jobs.push(fetchZai({ apiKey: zaiApiKey, jwt: zaiJwt }));
   if (enabled.claude !== false) jobs.push(fetchClaude());
   if (enabled.codex !== false) jobs.push(fetchCodex());
   if (enabled.ollama !== false) jobs.push(fetchOllama());
+  if (enabled.opencode !== false) jobs.push(fetchOpencode({ workspace: opencodeWorkspace }));
   return Promise.all(jobs);
 }
 
@@ -234,4 +235,56 @@ export async function fetchClaude() {
 function pushClaudeWindow(arr, label, w) {
   if (!w || typeof w.utilization !== 'number') return;
   arr.push({ label, used_pct: w.utilization, resets_at: w.resets_at || null });
+}
+
+// OpenCode Go subscription usage.
+//
+// No public usage API (docs only cover the inference gateway). The workspace
+// console is a SolidStart app that streams the numbers into the SSR HTML, e.g.
+//   rollingUsage = { status:"ok", resetInSec:18000,   usagePercent:0 }
+//   weeklyUsage  = { status:"ok", resetInSec:125659,  usagePercent:0 }
+//   monthlyUsage = { status:"ok", resetInSec:2671357, usagePercent:0 }
+// We fetch the /workspace/<id>/go page with the browser's own opencode.ai
+// session (credentials:'include') and parse those three windows. The cookie
+// never leaves the browser. The workspace id is per-user, so it's supplied
+// from chrome.storage.local (set in the options page) rather than hardcoded.
+const OPENCODE_WINDOWS = [
+  { key: 'rollingUsage', label: 'rolling (5h)' },
+  { key: 'weeklyUsage', label: 'weekly (7d)' },
+  { key: 'monthlyUsage', label: 'monthly (30d)' },
+];
+
+export async function fetchOpencode({ workspace } = {}) {
+  if (!workspace) {
+    return { provider: 'opencode', ok: false, error: 'set your OpenCode workspace ID in the options page' };
+  }
+  try {
+    const url = `https://opencode.ai/workspace/${workspace}/go`;
+    const res = await fetch(url, { credentials: 'include' });
+    if (!res.ok) {
+      const hint = res.status === 401 || res.status === 302 ? ' — login to opencode.ai?' : '';
+      return { provider: 'opencode', ok: false, error: `HTTP ${res.status}${hint}` };
+    }
+    const html = await res.text();
+    const now = Date.now();
+    const windows = [];
+    for (const { key, label } of OPENCODE_WINDOWS) {
+      const pct = html.match(new RegExp(`${key}[^]{0,90}?usagePercent:([\\d.]+)`));
+      if (!pct) continue;
+      const reset = html.match(new RegExp(`${key}[^]{0,90}?resetInSec:(\\d+)`));
+      const resetSec = reset ? Number(reset[1]) : null;
+      windows.push({
+        label,
+        used_pct: Number(pct[1]),
+        resets_at: resetSec != null ? new Date(now + resetSec * 1000).toISOString() : null,
+        window_seconds: resetSec,
+      });
+    }
+    if (windows.length === 0) {
+      return { provider: 'opencode', ok: false, error: 'could not parse usage — login to opencode.ai or layout changed?' };
+    }
+    return { provider: 'opencode', ok: true, plan: 'OpenCode Go', windows };
+  } catch (e) {
+    return { provider: 'opencode', ok: false, error: e.message };
+  }
 }
