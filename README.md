@@ -1,11 +1,11 @@
 # aimo — AI Usage Monitor
 
-A unified viewer for your **ZAI / Claude / Codex / Ollama Cloud** usage limits.
+A unified viewer for your **ZAI / Claude / Codex / Ollama Cloud / OpenCode Go** usage limits.
 Bundles a Chromium extension and a local dashboard server.
 **Zero-config for most providers** — reuses the browser session you're already logged into.
 
 <p align="center">
-  <img src="docs/aimo_top.png" alt="aimo — AI Usage Monitor: unified usage limits for Claude, Codex, ZAI, and Ollama Cloud">
+  <img src="docs/aimo_top.png" alt="aimo — AI Usage Monitor: unified usage limits for Claude, Codex, ZAI, Ollama Cloud, and OpenCode Go">
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@ Bundles a Chromium extension and a local dashboard server.
 
 AI tools are powerful, but their usage limits are fragmented.
 
-Claude, Codex, ZAI, and Ollama Cloud each expose their limits in different places, with different reset windows, quota names, and usage formats. When you use multiple providers for coding, research, agents, or automation, checking "which model can I safely use now?" becomes a manual routine.
+Claude, Codex, ZAI, Ollama Cloud, and OpenCode Go each expose their limits in different places, with different reset windows, quota names, and usage formats. When you use multiple providers for coding, research, agents, or automation, checking "which model can I safely use now?" becomes a manual routine.
 
 aimo solves that small but painful operational problem.
 
@@ -37,7 +37,7 @@ It is a fuel gauge for people who actively operate multiple AI systems.
 
 ### What it does
 
-One extension popup + one local dashboard shows the current usage window for all four services:
+One extension popup + one local dashboard shows the current usage window for all five services:
 
 | Provider | Windows shown | How it fetches |
 |---|---|---|
@@ -45,6 +45,7 @@ One extension popup + one local dashboard shows the current usage window for all
 | Codex | 5h / 7d + Spark limits | `chatgpt.com/backend-api/wham/usage` — session → `/api/auth/session` → Bearer |
 | ZAI | whatever time / token windows the plan exposes (labels inferred from reset time) | `api.z.ai/api/monitor/usage/quota/limit` — JWT auto-captured from z.ai localStorage (API key fallback) |
 | Ollama | session / weekly | `ollama.com/settings` HTML parse via session cookie |
+| OpenCode Go | rolling (5h) / weekly (7d) / monthly (30d) | `opencode.ai/workspace/<id>/go` SSR HTML parse via your opencode.ai session cookie (workspace ID set in Options) |
 
 ### Update policy (TOS-safe)
 
@@ -55,14 +56,15 @@ One extension popup + one local dashboard shows the current usage window for all
 - you open the dashboard page (one fetch per open),
 - an agent hits `GET /api/usage` or `POST /api/refresh`.
 
-Each request retrieves exactly the same data the provider's own usage page would show you. aimo is unaffiliated with Anthropic, OpenAI, Z.ai, or Ollama; verify each provider's terms of service before using it on shared or commercial accounts.
+Each request retrieves exactly the same data the provider's own usage page would show you. aimo is unaffiliated with Anthropic, OpenAI, Z.ai, Ollama, or OpenCode; verify each provider's terms of service before using it on shared or commercial accounts.
 
 Plan differences are handled gracefully: if a provider's response doesn't include a particular window (e.g. no Opus quota on Claude Max, no Spark on Codex Plus, no weekly on legacy ZAI plans), it's simply omitted from the output.
 
 ### Features
 
-- **Zero API keys** for Claude / Codex / Ollama — browser cookies are enough
+- **Zero API keys** for Claude / Codex / Ollama / OpenCode Go — browser cookies are enough
 - **Optional API key** for ZAI (needed only if the z.ai JWT capture fails)
+- **One-time workspace ID** for OpenCode Go (paste it in Options — it's not a secret, just identifies which workspace to read)
 - Per-provider **enable/disable toggles** in Options
 - Local **dashboard** at `http://localhost:3030` with auto-refresh on open
 - **JSON API** for agents: `GET /api/usage` and `POST /api/refresh`
@@ -89,7 +91,7 @@ npm install            # only dependency is dotenv
 2. Enable **Developer mode**
 3. Click **Load unpacked** and select the `extension/` folder
 
-**Log into the providers you want to monitor** — nothing else to configure for Claude / Codex / Ollama. For ZAI, open `https://z.ai/` once while logged in (the extension captures the JWT from localStorage automatically).
+**Log into the providers you want to monitor** — nothing else to configure for Claude / Codex / Ollama. For ZAI, open `https://z.ai/` once while logged in (the extension captures the JWT from localStorage automatically). For OpenCode Go, log into `https://opencode.ai/` and paste your workspace ID (the `wrk_…` part of the `/workspace/<id>/go` URL) into Options.
 
 ### Run
 
@@ -226,7 +228,7 @@ aimo/
 ├── server.mjs              HTTP server (dashboard + /api/usage + /ingest)
 ├── cli.mjs                 terminal viewer
 ├── lib/env-resolver.mjs    Bitwarden CLI fallback
-├── collectors/             server-side collectors (zai, codex, claude stub, ollama)
+├── collectors/             server-side collectors (zai, codex, claude stub, ollama, opencode stub)
 └── extension/              Manifest V3 extension
     ├── manifest.json
     ├── background.js       service worker — fetch + /ingest push
@@ -249,7 +251,7 @@ MIT.
 
 AI ツールは強力だが、使用制限は分断されている。
 
-Claude / Codex / ZAI / Ollama Cloud はそれぞれ別の場所で、別のリセット窓、別のクォータ名、別のフォーマットで制限を表示する。コーディング・リサーチ・エージェント・自動化で複数プロバイダを使っていると、「今どのモデルなら安全に使えるか？」の確認が手動のルーチン作業になる。
+Claude / Codex / ZAI / Ollama Cloud / OpenCode Go はそれぞれ別の場所で、別のリセット窓、別のクォータ名、別のフォーマットで制限を表示する。コーディング・リサーチ・エージェント・自動化で複数プロバイダを使っていると、「今どのモデルなら安全に使えるか？」の確認が手動のルーチン作業になる。
 
 aimo はこの小さいが地味に痛い運用上の問題を解く。
 
@@ -261,7 +263,7 @@ aimo はベンチマークツールでも、プロキシでも、自動化 bot �
 
 ### 何をするツールか
 
-1つの拡張ポップアップ + 1つのローカルダッシュボードで、4 サービスの現在の使用量ウィンドウをまとめて表示する。
+1つの拡張ポップアップ + 1つのローカルダッシュボードで、5 サービスの現在の使用量ウィンドウをまとめて表示する。
 
 | プロバイダ | 表示する項目 | 取得経路 |
 |---|---|---|
@@ -269,6 +271,7 @@ aimo はベンチマークツールでも、プロキシでも、自動化 bot �
 | Codex | 5時間 / 週間 + Spark 制限 | `chatgpt.com/backend-api/wham/usage` — セッション → `/api/auth/session` → Bearer |
 | ZAI | プランが返す時間・トークン系ウィンドウ（ラベルは reset 時刻から自動推定）| `api.z.ai/api/monitor/usage/quota/limit` — z.ai localStorage から JWT 自動捕獲（API key フォールバックあり）|
 | Ollama | セッション / 週間 | `ollama.com/settings` の HTML パース（セッション Cookie）|
+| OpenCode Go | rolling (5時間) / 週間 (7d) / 月間 (30d) | `opencode.ai/workspace/<id>/go` の SSR HTML パース（opencode.ai セッション Cookie、workspace ID は Options で設定）|
 
 ### 更新ポリシー（TOS 配慮）
 
@@ -279,14 +282,15 @@ aimo はベンチマークツールでも、プロキシでも、自動化 bot �
 - ダッシュボードページを開いた時（1 回 fetch）
 - エージェントが `GET /api/usage` / `POST /api/refresh` を叩いた時
 
-各リクエストで取得するのは、各プロバイダの自分の使用量ページに表示されるのと同じデータ。aimo は Anthropic / OpenAI / Z.ai / Ollama とは無関係。共有アカウントや商用アカウントで使う場合は各社の TOS を確認してください。
+各リクエストで取得するのは、各プロバイダの自分の使用量ページに表示されるのと同じデータ。aimo は Anthropic / OpenAI / Z.ai / Ollama / OpenCode とは無関係。共有アカウントや商用アカウントで使う場合は各社の TOS を確認してください。
 
 プラン差分はデータ駆動で処理される：レスポンスに含まれないウィンドウ（Claude Max で Opus 枠がない、Codex Plus で Spark がない、レガシー ZAI プランで週制限がない等）は単純に表示から省かれる。
 
 ### 特徴
 
-- **API キー不要**で Claude / Codex / Ollama が動く — ブラウザの Cookie だけで OK
+- **API キー不要**で Claude / Codex / Ollama / OpenCode Go が動く — ブラウザの Cookie だけで OK
 - **ZAI のみ**任意で API key（z.ai の JWT 捕獲に失敗した場合のフォールバック）
+- **OpenCode Go は workspace ID を一度だけ**設定（Options に貼り付け。秘匿情報ではなく、どの workspace を読むかの識別子）
 - Options ページで**プロバイダごとの有効/無効切替**
 - ローカル **ダッシュボード** `http://localhost:3030`（開いた時に自動 refresh）
 - エージェント向け **JSON API**：`GET /api/usage` と `POST /api/refresh`
@@ -313,7 +317,7 @@ npm install            # 依存は dotenv だけ
 2. **デベロッパーモード** を ON
 3. **パッケージ化されていない拡張機能を読み込む** → `extension/` フォルダを選択
 
-**監視したいプロバイダにログイン**するだけで Claude / Codex / Ollama は動く。ZAI は `https://z.ai/` を一度開けば（ログイン済み状態で）拡張が localStorage から JWT を自動キャプチャする。
+**監視したいプロバイダにログイン**するだけで Claude / Codex / Ollama は動く。ZAI は `https://z.ai/` を一度開けば（ログイン済み状態で）拡張が localStorage から JWT を自動キャプチャする。OpenCode Go は `https://opencode.ai/` にログインし、workspace ID（`/workspace/<id>/go` URL の `wrk_…` の部分）を Options に貼り付ける。
 
 ### 起動
 
