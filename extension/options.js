@@ -2,6 +2,8 @@ const zaiKeyInput = document.getElementById('zaikey');
 const saveKeyBtn = document.getElementById('save-key');
 const opencodeWsInput = document.getElementById('opencode-ws');
 const saveOpencodeWsBtn = document.getElementById('save-opencode-ws');
+const opencodeLink = document.getElementById('opencode-link');
+const opencodeLinkWhat = document.getElementById('opencode-link-what');
 const serverDot = document.getElementById('server-dot');
 const serverText = document.getElementById('server-text');
 const serverRecheckBtn = document.getElementById('server-recheck');
@@ -79,12 +81,27 @@ async function saveApiKey() {
 async function loadOpencodeWorkspace() {
   const { opencodeWorkspace } = await chrome.storage.local.get('opencodeWorkspace');
   if (opencodeWorkspace) opencodeWsInput.value = opencodeWorkspace;
+  updateOpencodeLink(opencodeWorkspace);
 }
 
 async function saveOpencodeWorkspace() {
   const value = opencodeWsInput.value.trim();
   await chrome.storage.local.set({ opencodeWorkspace: value });
+  updateOpencodeLink(value);
   showToast(value ? 'Saved' : 'Cleared');
+}
+
+// Build the OpenCode quick link from the saved workspace id. The id is never
+// hardcoded; without it we send the user to /auth, which redirects to their
+// workspace so they can copy the id from the URL.
+function updateOpencodeLink(workspace) {
+  if (workspace) {
+    opencodeLink.href = `https://opencode.ai/workspace/${workspace}/go`;
+    opencodeLinkWhat.textContent = `opencode.ai/workspace/${workspace}/go`;
+  } else {
+    opencodeLink.href = 'https://opencode.ai/auth';
+    opencodeLinkWhat.textContent = 'opencode.ai/auth (set workspace ID above)';
+  }
 }
 
 async function checkServer() {
