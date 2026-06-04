@@ -337,7 +337,7 @@ const CLIENT_SCRIPT = `
   const updatedEl = document.getElementById('updated');
 
   function triggerExtensionRefresh() {
-    window.postMessage({ type: 'usage-monitor:refresh', providers: ['ollama', 'claude', 'codex', 'zai', 'opencode'] }, window.location.origin);
+    window.postMessage({ type: 'usage-monitor:refresh', providers: ['ollama', 'claude', 'codex', 'zai', 'opencode', 'minimax'] }, window.location.origin);
   }
 
   async function fetchAndRender() {

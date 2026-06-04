@@ -61,7 +61,9 @@
     <label class="prov-toggle"><input type="checkbox" data-prov="codex" checked> <span>Codex</span></label>
     <label class="prov-toggle"><input type="checkbox" data-prov="ollama" checked> <span>Ollama</span></label>
     <label class="prov-toggle"><input type="checkbox" data-prov="opencode" checked> <span>OpenCode</span></label>
+    <label class="prov-toggle"><input type="checkbox" data-prov="minimax" checked> <span>MiniMax</span></label>
   </div>
+  <small style="margin-top:8px;display:block">Antigravity (agy) is collected server-side from the running <code>agy</code> CLI — no browser toggle needed; it appears on the dashboard when the server is up.</small>
 </div>
 
 <h2>Server</h2>
@@ -133,8 +135,12 @@
       <div class="who">OpenCode</div>
       <div class="what" id="opencode-link-what">opencode.ai/auth (set workspace ID above)</div>
     </a>
+    <a class="linkcard" href="https://platform.minimax.io/console/usage" target="_blank">
+      <div class="who">MiniMax</div>
+      <div class="what">platform.minimax.io/console/usage</div>
+    </a>
   </div>
-  <small style="margin-top: 10px;">Opening these pages in the same browser refreshes the session cookies the extension relies on. Visiting z.ai also triggers JWT capture. The OpenCode link points to your <code>/workspace/&lt;id&gt;/go</code> usage page once the workspace ID is saved.</small>
+  <small style="margin-top: 10px;">Opening these pages in the same browser refreshes the session cookies the extension relies on. Visiting z.ai also triggers JWT capture. The OpenCode link points to your <code>/workspace/&lt;id&gt;/go</code> usage page once the workspace ID is saved. Visiting the MiniMax console refreshes the session and GroupId cookies.</small>
 </div>
 
 <div class="toast" id="toast">Copied</div>
