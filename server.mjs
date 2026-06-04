@@ -24,7 +24,7 @@ import { collectAll } from './collectors/index.mjs';
 import { resolveConfig } from './lib/env-resolver.mjs';
 
 const PORT = Number(process.env.USAGE_MONITOR_PORT || 3030);
-const PUSH_ONLY = new Set(['ollama', 'claude', 'opencode']);
+const PUSH_ONLY = new Set(['ollama', 'claude', 'opencode', 'minimax']);
 
 // In-memory cache for pushed data. Keyed by provider.
 // cache[provider] = { data, received_at }

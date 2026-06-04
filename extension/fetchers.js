@@ -8,6 +8,7 @@ export async function fetchAll({ zaiApiKey, zaiJwt, opencodeWorkspace, enabled =
   if (enabled.codex !== false) jobs.push(fetchCodex());
   if (enabled.ollama !== false) jobs.push(fetchOllama());
   if (enabled.opencode !== false) jobs.push(fetchOpencode({ workspace: opencodeWorkspace }));
+  if (enabled.minimax !== false) jobs.push(fetchMinimax());
   return Promise.all(jobs);
 }
 
@@ -287,4 +288,69 @@ export async function fetchOpencode({ workspace } = {}) {
   } catch (e) {
     return { provider: 'opencode', ok: false, error: e.message };
   }
+}
+
+// MiniMax Token/Coding Plan usage.
+//
+// platform.minimax.io authenticates console API calls with HttpOnly cookies —
+// adding an Authorization header actually makes it fail with "cookie is
+// missing", so this must run in the browser (credentials:'include').
+// The required ?GroupId= is mirrored in the non-HttpOnly minimax_group_id_v2
+// cookie, so we read it via chrome.cookies — zero configuration.
+//
+// coding_plan/remains → model_remains[]: one row per model family
+// ("general", "video", ...) with interval (e.g. 5h) + weekly percentages.
+export async function fetchMinimax() {
+  let gid = null;
+  try {
+    const c = await chrome.cookies.get({ url: 'https://platform.minimax.io/', name: 'minimax_group_id_v2' });
+    gid = c?.value || null;
+  } catch (e) {
+    return { provider: 'minimax', ok: false, error: `cookie read failed: ${e.message}` };
+  }
+  if (!gid) {
+    return { provider: 'minimax', ok: false, error: 'no GroupId cookie — visit platform.minimax.io while logged in' };
+  }
+  try {
+    const res = await fetch(`https://platform.minimax.io/v1/api/openplatform/coding_plan/remains?GroupId=${gid}`, {
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return { provider: 'minimax', ok: false, error: `HTTP ${res.status}` };
+    const body = await res.json();
+    if (body?.base_resp?.status_code !== 0) {
+      return { provider: 'minimax', ok: false, error: body?.base_resp?.status_msg || 'unexpected response' };
+    }
+    const windows = [];
+    for (const m of body.model_remains || []) {
+      const name = m.model_name || 'model';
+      const intervalLabel = `${name} (${minimaxWindow(m.start_time, m.end_time)})`;
+      if (typeof m.current_interval_remaining_percent === 'number') {
+        windows.push({
+          label: intervalLabel,
+          used_pct: 100 - m.current_interval_remaining_percent,
+          resets_at: m.end_time ? new Date(m.end_time).toISOString() : null,
+        });
+      }
+      if (typeof m.current_weekly_remaining_percent === 'number') {
+        windows.push({
+          label: `${name} weekly`,
+          used_pct: 100 - m.current_weekly_remaining_percent,
+          resets_at: m.weekly_end_time ? new Date(m.weekly_end_time).toISOString() : null,
+        });
+      }
+    }
+    if (windows.length === 0) {
+      return { provider: 'minimax', ok: false, error: 'no model_remains — no active token plan?' };
+    }
+    return { provider: 'minimax', ok: true, plan: 'Token Plan', windows };
+  } catch (e) {
+    return { provider: 'minimax', ok: false, error: e.message };
+  }
+}
+
+function minimaxWindow(startMs, endMs) {
+  if (!startMs || !endMs) return 'interval';
+  const hrs = Math.round((endMs - startMs) / 3_600_000);
+  return hrs >= 24 ? `${Math.round(hrs / 24)}d` : `${hrs}h`;
 }

@@ -1,6 +1,6 @@
 # aimo — AI Usage Monitor
 
-A unified viewer for your **ZAI / Claude / Codex / Ollama Cloud / OpenCode Go** usage limits.
+A unified viewer for your **ZAI / Claude / Codex / Ollama Cloud / OpenCode Go / MiniMax / Antigravity (agy)** usage limits.
 Bundles a Chromium extension and a local dashboard server.
 **Zero-config for most providers** — reuses the browser session you're already logged into.
 
@@ -37,7 +37,7 @@ It is a fuel gauge for people who actively operate multiple AI systems.
 
 ### What it does
 
-One extension popup + one local dashboard shows the current usage window for all five services:
+One extension popup + one local dashboard shows the current usage window for all seven services:
 
 | Provider | Windows shown | How it fetches |
 |---|---|---|
@@ -46,6 +46,8 @@ One extension popup + one local dashboard shows the current usage window for all
 | ZAI | whatever time / token windows the plan exposes (labels inferred from reset time) | `api.z.ai/api/monitor/usage/quota/limit` — JWT auto-captured from z.ai localStorage (API key fallback) |
 | Ollama | session / weekly | `ollama.com/settings` HTML parse via session cookie |
 | OpenCode Go | rolling (5h) / weekly (7d) / monthly (30d) | `opencode.ai/workspace/<id>/go` SSR HTML parse via your opencode.ai session cookie (workspace ID set in Options) |
+| MiniMax | per-model interval (e.g. 5h) + weekly | `platform.minimax.io/v1/api/openplatform/coding_plan/remains` via your platform.minimax.io session cookie (GroupId auto-read from the `minimax_group_id_v2` cookie) |
+| Antigravity (agy) | per-model quota (Gemini / Claude / GPT-OSS) | server-side: the running `agy` CLI exposes a loopback language server; aimo POSTs `GetUserStatus` to it (no CSRF needed) |
 
 ### Update policy (TOS-safe)
 
@@ -62,7 +64,8 @@ Plan differences are handled gracefully: if a provider's response doesn't includ
 
 ### Features
 
-- **Zero API keys** for Claude / Codex / Ollama / OpenCode Go — browser cookies are enough
+- **Zero API keys** for Claude / Codex / Ollama / OpenCode Go / MiniMax — browser cookies are enough
+- **Zero config** for Antigravity — collected server-side from the running `agy` CLI (shows a friendly error when agy is not running)
 - **Optional API key** for ZAI (needed only if the z.ai JWT capture fails)
 - **One-time workspace ID** for OpenCode Go (paste it in Options — it's not a secret, just identifies which workspace to read)
 - Per-provider **enable/disable toggles** in Options
