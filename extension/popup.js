@@ -19,7 +19,12 @@ async function refresh() {
   body.innerHTML = '<div style="color:#666;font-size:11px;padding:6px 4px">Fetching…</div>';
   try {
     const results = await getResults();
-    render(results || []);
+    // The provider toggles control fetching for browser-side providers, but
+    // server-merged results also carry server-side ones (agy, codex, zai) —
+    // apply the same toggles as a display filter so unchecking really hides.
+    const { enabled } = await chrome.storage.local.get('enabled');
+    const map = enabled || {};
+    render((results || []).filter((r) => map[r.provider] !== false));
   } catch (e) {
     body.innerHTML = `<div class="err">${esc(e.message || 'error')}</div>`;
   }

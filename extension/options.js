@@ -97,7 +97,9 @@ async function saveOpencodeWorkspace() {
 function updateOpencodeLink(workspace) {
   if (workspace) {
     opencodeLink.href = `https://opencode.ai/workspace/${workspace}/go`;
-    opencodeLinkWhat.textContent = `opencode.ai/workspace/${workspace}/go`;
+    // Mask the per-user workspace id in the visible label (screenshots of the
+    // options page shouldn't leak it); the href still carries the full URL.
+    opencodeLinkWhat.textContent = `opencode.ai/workspace/${workspace.slice(0, 4)}…/go`;
   } else {
     opencodeLink.href = 'https://opencode.ai/auth';
     opencodeLinkWhat.textContent = 'opencode.ai/auth (set workspace ID above)';

@@ -62,8 +62,9 @@
     <label class="prov-toggle"><input type="checkbox" data-prov="ollama" checked> <span>Ollama</span></label>
     <label class="prov-toggle"><input type="checkbox" data-prov="opencode" checked> <span>OpenCode</span></label>
     <label class="prov-toggle"><input type="checkbox" data-prov="minimax" checked> <span>MiniMax</span></label>
+    <label class="prov-toggle"><input type="checkbox" data-prov="agy" checked> <span>Antigravity</span></label>
   </div>
-  <small style="margin-top:8px;display:block">Antigravity (agy) is collected server-side from the running <code>agy</code> CLI — no browser toggle needed; it appears on the dashboard when the server is up.</small>
+  <small style="margin-top:8px;display:block">Antigravity (agy) is collected server-side from the running <code>agy</code> CLI — the toggle hides its card in the popup (the card shows only while the local server is up).</small>
 </div>
 
 <h2>Server</h2>
@@ -106,7 +107,7 @@
 
   <label>OpenCode workspace ID</label>
   <div class="row">
-    <input type="text" id="opencode-ws" placeholder="wrk_… (from your opencode.ai/workspace/<id>/go URL)">
+    <input type="password" id="opencode-ws" placeholder="wrk_… (from your opencode.ai/workspace/<id>/go URL)">
     <button id="save-opencode-ws" class="primary">Save</button>
   </div>
   <small>Per-user workspace id, read from your browser's opencode.ai session. Stored locally via chrome.storage.local — never bundled in the extension.</small>
