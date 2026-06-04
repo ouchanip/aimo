@@ -1,6 +1,6 @@
 {
   "name": "aimo",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Unified usage/limit viewer for ZAI / Claude / Codex / Ollama Cloud. Chromium extension + local dashboard.",
   "type": "module",
   "private": true,
